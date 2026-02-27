@@ -957,45 +957,6 @@ const App = {
     async loadUserData() {
         // Загружаем данные из IndexedDB для текущего пользователя
         this.history = await loadAllFromUserDB(this.currentUser);
-        
-        // Проверяем, есть ли данные в localStorage (старый формат) и переносим
-        await this.migrateFromLocalStorage();
-    },
-    
-    async migrateFromLocalStorage() {
-        const localData = localStorage.getItem('lifePro');
-        if (!localData) return;
-        
-        try {
-            const oldHistory = JSON.parse(localData);
-            
-            // Конвертируем старые строки в объекты {text, photo}
-            for (const date in oldHistory) {
-                for (const cat in oldHistory[date]) {
-                    if (oldHistory[date][cat] && Array.isArray(oldHistory[date][cat].notes)) {
-                        oldHistory[date][cat].notes = oldHistory[date][cat].notes.map(note => {
-                            if (typeof note === 'string') {
-                                return { text: note, photo: null };
-                            }
-                            return note;
-                        });
-                    }
-                }
-            }
-            
-            // Добавляем к существующей истории
-            this.history = { ...this.history, ...oldHistory };
-            
-            // Сохраняем в IndexedDB
-            for (const [date, categories] of Object.entries(oldHistory)) {
-                await saveDayToUserDB(this.currentUser, date, categories);
-            }
-            
-            localStorage.removeItem('lifePro');
-            console.log('Миграция из localStorage выполнена');
-        } catch (e) {
-            console.error('Ошибка миграции', e);
-        }
     },
     
     showAppContent() {
@@ -1017,11 +978,6 @@ const App = {
     },
     
     initApp() {
-        // Проверяем, есть ли данные за сегодня
-        if (!this.history[this.viewDate]) {
-            this.generate();
-        }
-
         // Назначаем обработчики
         document.getElementById("genBtn").onclick = () => this.generate();
 
