@@ -1008,14 +1008,17 @@ const App = {
     },
 
     async generate() {
+        // Создаем объект для текущей даты, если его нет
         if (!this.history[this.viewDate]) {
             this.history[this.viewDate] = {};
         }
+        
+        // Генерируем случайные значения от 0 до 100 для каждой сферы
         this.names.forEach(n => {
-            if (!this.history[this.viewDate][n]) {
-                this.history[this.viewDate][n] = { val: 50, notes: [] };
-            }
+            const randomValue = Math.floor(Math.random() * 101); // 0-100 включительно
+            this.history[this.viewDate][n] = { val: randomValue, notes: [] };
         });
+        
         await this.saveCurrentDate();
         this.renderAll();
     },
@@ -1135,14 +1138,18 @@ const App = {
 
     async addNote(category, type, date = null) {
         const targetDate = date || this.viewDate;
+        // Проверяем, есть ли данные за этот день, если нет - создаем с 50
+        if (!this.history[targetDate] || !this.history[targetDate][category]) {
+            if (!this.history[targetDate]) {
+                this.history[targetDate] = {};
+            }
+            this.history[targetDate][category] = { val: 50, notes: [] };
+        }
+        
         const prefix = type === 'plus' ? '➕ ' : '➖ ';
         const promptText = type === 'plus' ? 'Позитивная запись:' : 'Негативная запись:';
         const t = prompt(promptText);
         if (!t) return;
-        
-        if (!this.history[targetDate][category]) {
-            this.history[targetDate][category] = { val: 50, notes: [] };
-        }
         
         this.history[targetDate][category].notes.push({ text: prefix + t, photo: null });
         
@@ -1161,8 +1168,9 @@ const App = {
 
     async updateValue(category, value, date = null) {
         const targetDate = date || this.viewDate;
-        if (!this.history[targetDate][category]) {
-            this.history[targetDate][category] = { val: 50, notes: [] };
+        // Проверяем, есть ли данные за этот день
+        if (!this.history[targetDate] || !this.history[targetDate][category]) {
+            return; // Не обновляем, если данных нет
         }
         this.history[targetDate][category].val = value;
         await saveDayToUserDB(this.currentUser, targetDate, this.history[targetDate]);
@@ -1184,10 +1192,7 @@ const App = {
                     <div class="day-details-content">
                         <span class="close-details" onclick="App.closeDayDetails()">&times;</span>
                         <h2>${date}</h2>
-                        <div class="no-data-message">Нет данных за этот день</div>
-                        <div style="display:flex; gap:10px; margin-top:20px;">
-                            <button class="backup-btn" style="flex:1;" onclick="App.generateForDate('${date}')">✨ Создать данные</button>
-                        </div>
+                        <div class="no-data-message">Нет данных за этот день. Нажмите кнопку "✨ Предсказание на сегодня" для генерации случайных процентов.</div>
                     </div>
                 </div>
             `;
@@ -1199,7 +1204,7 @@ const App = {
         
         this.names.forEach(category => {
             if (!dayData[category]) {
-                dayData[category] = { val: 50, notes: [] };
+                return; // Пропускаем категории без данных
             }
             
             const catData = dayData[category];
@@ -1220,7 +1225,6 @@ const App = {
                     notesHtml += `<span class="photo-icon ${hasPhoto ? 'has-photo' : 'no-photo'}" 
                                   onclick="App.handlePhotoClick('${category}', ${index}, '${date}')">📷</span>`;
                     
-                    // Добавляем корзину для удаления фото рядом с иконкой фото
                     if (hasPhoto) {
                         notesHtml += `<span class="photo-delete" onclick="App.removePhoto('${category}', ${index}, '${date}')" title="Удалить фото">🗑️</span>`;
                     }
@@ -1263,31 +1267,29 @@ const App = {
             `;
         });
 
-        popup.innerHTML = `
-            <div class="day-details-popup">
-                <div class="day-details-content">
-                    <span class="close-details" onclick="App.closeDayDetails()">&times;</span>
-                    <h2>${date}</h2>
-                    ${categoriesHtml}
+        // Если нет ни одной категории с данными
+        if (categoriesHtml === '') {
+            popup.innerHTML = `
+                <div class="day-details-popup">
+                    <div class="day-details-content">
+                        <span class="close-details" onclick="App.closeDayDetails()">&times;</span>
+                        <h2>${date}</h2>
+                        <div class="no-data-message">Нет данных за этот день. Нажмите кнопку "✨ Предсказание на сегодня" для генерации случайных процентов.</div>
+                    </div>
                 </div>
-            </div>
-        `;
-        popup.style.display = 'block';
-    },
-
-    generateForDate(date) {
-        if (!this.history[date]) {
-            this.history[date] = {};
+            `;
+        } else {
+            popup.innerHTML = `
+                <div class="day-details-popup">
+                    <div class="day-details-content">
+                        <span class="close-details" onclick="App.closeDayDetails()">&times;</span>
+                        <h2>${date}</h2>
+                        ${categoriesHtml}
+                    </div>
+                </div>
+            `;
         }
-        this.names.forEach(n => {
-            if (!this.history[date][n]) {
-                this.history[date][n] = { val: 50, notes: [] };
-            }
-        });
-        saveDayToUserDB(this.currentUser, date, this.history[date]).then(() => {
-            this.renderAll();
-            this.showDayDetails(date);
-        });
+        popup.style.display = 'block';
     },
 
     closeDayDetails() {
@@ -1299,13 +1301,26 @@ const App = {
         const box = document.getElementById("metrics");
         box.innerHTML = "";
 
+        // Проверяем, есть ли данные за текущий день
         if (!this.history[this.viewDate]) {
-            this.history[this.viewDate] = {};
+            // Показываем заглушку, если данных нет
+            const placeholder = document.createElement("div");
+            placeholder.className = "card";
+            placeholder.innerHTML = `
+                <div style="text-align:center; padding:20px;">
+                    Нет данных за этот день.<br>
+                    Нажмите "✨ Предсказание на сегодня" для генерации случайных процентов.
+                </div>
+            `;
+            box.appendChild(placeholder);
+            return;
         }
+        
         const data = this.history[this.viewDate];
 
         this.names.forEach(n => {
-            if (!data[n]) data[n] = { val: 50, notes: [] };
+            // Пропускаем, если нет данных для этой категории
+            if (!data[n]) return;
 
             const val = data[n].val;
             const color = val >= 75 ? "green" : val >= 45 ? "yellow" : "red";
@@ -1477,11 +1492,7 @@ const App = {
             el.innerText = d;
             el.onclick = () => {
                 this.viewDate = dateStr;
-                if (!this.history[this.viewDate]) {
-                    this.generate();
-                } else {
-                    this.renderAll();
-                }
+                this.renderAll();
                 // Показываем детали дня
                 this.showDayDetails(dateStr);
             };
