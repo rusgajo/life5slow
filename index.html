@@ -1,0 +1,1607 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Life Balance Pro</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+:root{
+ --bg:#0f1117;
+ --card:#1a1d29;
+ --accent:#3a7bfd;
+ --accent2:#6c5ce7;
+ --text:#ffffff;
+ --danger:#e74c3c;
+ --warn:#f1c40f;
+ --good:#2ecc71;
+}
+
+body{
+ margin:0;
+ font-family:Segoe UI,sans-serif;
+ background:var(--bg);
+ color:var(--text);
+}
+
+.container{
+ max-width:1000px;
+ margin:auto;
+ padding:20px;
+}
+
+h1{text-align:center;margin-bottom:10px;}
+
+#genBtn{
+ background:linear-gradient(135deg,var(--accent),var(--accent2));
+ border:none;
+ padding:16px;
+ border-radius:12px;
+ color:white;
+ font-weight:bold;
+ cursor:pointer;
+ width:100%;
+ font-size:18px;
+ transition:.3s;
+ box-shadow:0 5px 15px rgba(0,0,0,.4);
+}
+
+#genBtn:hover{
+ transform:translateY(-2px);
+ box-shadow:0 8px 20px rgba(0,0,0,.6);
+}
+
+.metrics{
+ display:grid;
+ grid-template-columns:repeat(auto-fit,minmax(240px,1fr));
+ gap:15px;
+ margin-top:20px;
+}
+
+.card{
+ background:var(--card);
+ padding:15px;
+ border-radius:12px;
+ display:flex;
+ flex-direction:column;
+ gap:10px;
+}
+
+.card-title{
+ font-size:1.2em;
+ font-weight:bold;
+ text-align:center;
+}
+
+.value{
+ font-size:1.5em;
+ font-weight:bold;
+ text-align:center;
+}
+
+.green{color:var(--good);}
+.yellow{color:var(--warn);}
+.red{color:var(--danger);}
+
+.notes{
+ font-size:0.9em;
+ opacity:0.85;
+ max-height:200px;
+ overflow-y:auto;
+}
+
+.note-item{
+ display:flex;
+ justify-content:space-between;
+ align-items:center;
+ padding:6px 8px;
+ margin:4px 0;
+ background:rgba(0,0,0,0.2);
+ border-radius:4px;
+ flex-wrap:wrap;
+}
+
+.note-content{
+ display:flex;
+ align-items:center;
+ gap:8px;
+ flex:1;
+}
+
+.note-text{
+ cursor:pointer;
+ word-break:break-word;
+ flex:1;
+}
+
+.note-text:hover{
+ opacity:0.8;
+ text-decoration:underline;
+}
+
+.photo-icon{
+ cursor:pointer;
+ font-size:1.2em;
+ transition:0.2s;
+ width:24px;
+ text-align:center;
+}
+
+.photo-icon.has-photo{
+ color:var(--accent);
+ filter:drop-shadow(0 0 5px var(--accent));
+}
+
+.photo-icon.no-photo{
+ opacity:0.4;
+}
+
+.photo-icon:hover{
+ transform:scale(1.2);
+}
+
+.photo-delete{
+ cursor:pointer;
+ font-size:0.9em;
+ color:var(--danger);
+ margin-left:4px;
+ opacity:0.7;
+}
+
+.photo-delete:hover{
+ opacity:1;
+}
+
+.note-actions{
+ display:flex;
+ gap:5px;
+ margin-left:8px;
+}
+
+.note-actions button{
+ background:none;
+ border:none;
+ color:white;
+ cursor:pointer;
+ font-size:14px;
+ padding:2px 6px;
+ border-radius:4px;
+}
+
+.note-actions button:hover{
+ background:rgba(255,255,255,0.2);
+}
+
+.delete-note{
+ color:#e74c3c;
+}
+
+.edit-note{
+ color:#f39c12;
+}
+
+input[type=range]{
+ width:100%;
+ height:8px;
+ border-radius:5px;
+ appearance:none;
+ outline:none;
+ background:linear-gradient(to right,var(--accent) 50%,#333 50%);
+}
+
+input[type=range]::-webkit-slider-thumb{
+ appearance:none;
+ width:18px;
+ height:18px;
+ border-radius:50%;
+ background:white;
+ border:3px solid var(--accent);
+ cursor:pointer;
+}
+
+.small{
+ padding:8px;
+ font-size:14px;
+ border-radius:8px;
+ border:none;
+ cursor:pointer;
+ color:white;
+}
+
+.plus{background:var(--good);}
+.minus{background:var(--danger);}
+
+.chart-container{
+ margin-top:30px;
+ background:var(--card);
+ padding:20px;
+ border-radius:12px;
+ position:relative;
+ height:400px;
+}
+
+.chart-controls{
+ display:flex;
+ justify-content:space-between;
+ align-items:center;
+ margin-bottom:10px;
+ flex-wrap:wrap;
+ gap:10px;
+}
+
+.mode-btn{
+ padding:6px 12px;
+ border-radius:6px;
+ border:none;
+ cursor:pointer;
+ background:#333;
+ color:white;
+}
+
+.mode-btn.active{
+ background:var(--accent);
+}
+
+.calendar{
+ margin-top:30px;
+ display:grid;
+ grid-template-columns:repeat(7,1fr);
+ gap:6px;
+}
+
+.day{
+ background:#222736;
+ padding:8px 0;
+ text-align:center;
+ border-radius:6px;
+ cursor:pointer;
+ position:relative;
+}
+
+.day.active{
+ border:2px solid var(--accent);
+}
+
+.day.has{
+ background:var(--accent);
+}
+
+.day.has-notes::after{
+ content:'📝';
+ position:absolute;
+ top:-5px;
+ right:-5px;
+ font-size:12px;
+ background:var(--card);
+ border-radius:50%;
+ width:18px;
+ height:18px;
+ display:flex;
+ align-items:center;
+ justify-content:center;
+}
+
+.day.has-photos::before{
+ content:'📷';
+ position:absolute;
+ top:-5px;
+ left:-5px;
+ font-size:12px;
+ background:var(--card);
+ border-radius:50%;
+ width:18px;
+ height:18px;
+ display:flex;
+ align-items:center;
+ justify-content:center;
+}
+
+.analytics{
+ margin-top:30px;
+ background:var(--card);
+ padding:15px;
+ border-radius:12px;
+}
+
+.backup-section{
+ margin-top:30px;
+ display:flex;
+ gap:10px;
+ justify-content:center;
+ flex-wrap:wrap;
+}
+
+.backup-btn{
+ background:var(--card);
+ color:white;
+ border:1px solid var(--accent);
+ padding:12px 24px;
+ border-radius:8px;
+ cursor:pointer;
+ font-size:16px;
+ transition:.3s;
+}
+
+.backup-btn:hover{
+ background:var(--accent);
+ transform:translateY(-2px);
+}
+
+#importFile{
+ display:none;
+}
+
+.day-details-popup {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.day-details-content {
+    background: var(--card);
+    padding: 25px;
+    border-radius: 15px;
+    max-width: 700px;
+    width: 90%;
+    max-height: 80vh;
+    overflow-y: auto;
+    position: relative;
+}
+
+.day-details-content h2 {
+    margin-top: 0;
+    color: var(--accent);
+    text-align: center;
+}
+
+.close-details {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    font-size: 24px;
+    cursor: pointer;
+    color: var(--danger);
+}
+
+.close-details:hover {
+    opacity: 0.8;
+}
+
+.category-summary {
+    margin-bottom: 20px;
+    padding: 15px;
+    background: rgba(255,255,255,0.05);
+    border-radius: 8px;
+}
+
+.category-summary h3 {
+    margin: 0 0 10px 0;
+    color: var(--accent);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.category-value {
+    font-size: 1.2em;
+    font-weight: bold;
+    margin-bottom: 15px;
+    padding: 5px;
+    text-align: center;
+    background: rgba(0,0,0,0.2);
+    border-radius: 4px;
+}
+
+.category-notes-list {
+    list-style: none;
+    padding: 0;
+    margin: 10px 0;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.category-notes-list li {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    background: rgba(0,0,0,0.1);
+    margin: 4px 0;
+    border-radius: 4px;
+}
+
+.category-notes-list li:last-child {
+    border-bottom: none;
+}
+
+.category-notes-list .photo-thumb {
+    width: 40px;
+    height: 40px;
+    object-fit: cover;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.category-notes-list .photo-thumb:hover {
+    opacity: 0.8;
+}
+
+.category-notes-list .note-text {
+    flex: 1;
+    cursor: pointer;
+}
+
+.category-notes-list .note-text:hover {
+    text-decoration: underline;
+}
+
+.category-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+}
+
+.category-actions button {
+    flex: 1;
+    padding: 8px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    transition: 0.2s;
+}
+
+.category-actions button:hover {
+    transform: translateY(-2px);
+}
+
+.note-item-actions {
+    display: flex;
+    gap: 5px;
+    margin-left: auto;
+}
+
+.note-item-actions button {
+    background: none;
+    border: none;
+    color: white;
+    cursor: pointer;
+    font-size: 12px;
+    padding: 2px 4px;
+    border-radius: 3px;
+}
+
+.note-item-actions button:hover {
+    background: rgba(255,255,255,0.2);
+}
+
+.no-data-message {
+    text-align: center;
+    opacity: 0.7;
+    padding: 20px;
+}
+
+.slider-container {
+    margin: 10px 0;
+}
+
+.slider-container input[type=range] {
+    width: 100%;
+}
+
+.detail-note-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 5px;
+    background: rgba(0,0,0,0.2);
+    border-radius: 4px;
+    margin: 5px 0;
+}
+
+/* Стили для авторизации */
+#authSection {
+    margin-bottom: 30px;
+}
+
+.auth-container {
+    background: var(--card);
+    border-radius: 12px;
+    padding: 20px;
+    max-width: 400px;
+    margin: 0 auto;
+}
+
+.auth-tabs {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.auth-tab {
+    flex: 1;
+    padding: 10px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    background: rgba(255,255,255,0.1);
+    color: white;
+    font-size: 16px;
+}
+
+.auth-tab.active {
+    background: var(--accent);
+}
+
+.auth-form {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.auth-form input {
+    padding: 12px;
+    border-radius: 6px;
+    border: none;
+    background: rgba(0,0,0,0.3);
+    color: white;
+    font-size: 16px;
+}
+
+.auth-form input::placeholder {
+    color: rgba(255,255,255,0.5);
+}
+
+.auth-form button {
+    padding: 12px;
+    border: none;
+    border-radius: 6px;
+    background: var(--accent);
+    color: white;
+    font-size: 16px;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.auth-form button:hover {
+    background: var(--accent2);
+    transform: translateY(-2px);
+}
+
+.auth-message {
+    text-align: center;
+    color: var(--warn);
+    font-size: 14px;
+    min-height: 20px;
+}
+
+.user-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--card);
+    padding: 15px 20px;
+    border-radius: 12px;
+    margin-bottom: 20px;
+}
+
+.user-info span {
+    font-size: 18px;
+    color: var(--accent);
+}
+
+.logout-btn {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 6px;
+    background: var(--danger);
+    color: white;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.logout-btn:hover {
+    opacity: 0.8;
+    transform: translateY(-2px);
+}
+
+.hidden {
+    display: none !important;
+}
+
+#appContent {
+    margin-top: 20px;
+}
+</style>
+</head>
+
+<body>
+<div class="container">
+    <h1>Life Balance Pro</h1>
+
+    <!-- Секция авторизации -->
+    <div id="authSection">
+        <div class="auth-container" id="authContainer">
+            <div class="auth-tabs">
+                <button class="auth-tab active" id="loginTab">Вход</button>
+                <button class="auth-tab" id="registerTab">Регистрация</button>
+            </div>
+            
+            <!-- Форма входа -->
+            <div id="loginForm" class="auth-form">
+                <input type="text" id="loginUsername" placeholder="Имя пользователя" autocomplete="off">
+                <input type="password" id="loginPassword" placeholder="Пароль">
+                <button id="loginBtn">Войти</button>
+                <div class="auth-message" id="loginMessage"></div>
+            </div>
+            
+            <!-- Форма регистрации (изначально скрыта) -->
+            <div id="registerForm" class="auth-form hidden">
+                <input type="text" id="regUsername" placeholder="Имя пользователя" autocomplete="off">
+                <input type="password" id="regPassword" placeholder="Пароль">
+                <input type="password" id="regConfirmPassword" placeholder="Подтвердите пароль">
+                <button id="registerBtn">Зарегистрироваться</button>
+                <div class="auth-message" id="registerMessage"></div>
+            </div>
+        </div>
+        
+        <!-- Информация о пользователе (скрыта, пока не авторизован) -->
+        <div id="userInfo" class="user-info hidden">
+            <span id="currentUser"></span>
+            <button class="logout-btn" id="logoutBtn">Выйти</button>
+        </div>
+    </div>
+
+    <!-- Основной контент (скрыт, пока не авторизован) -->
+    <div id="appContent" class="hidden">
+        <button id="genBtn">✨ Предсказание на сегодня</button>
+
+        <div id="dateLabel" style="margin-top:15px;font-weight:bold;text-align:center;"></div>
+
+        <div class="metrics" id="metrics"></div>
+
+        <div class="chart-container">
+            <div class="chart-controls">
+                <div>
+                    <button class="mode-btn active" data-mode="7">7 дней</button>
+                    <button class="mode-btn" data-mode="30">Месяц</button>
+                    <button class="mode-btn" data-mode="365">Год</button>
+                </div>
+                <div>
+                    <button class="mode-btn" id="prev">◀</button>
+                    <button class="mode-btn" id="next">▶</button>
+                </div>
+            </div>
+            <canvas id="chart"></canvas>
+        </div>
+
+        <div class="analytics" id="analytics"></div>
+
+        <div class="calendar" id="calendar"></div>
+
+        <div class="backup-section">
+            <button class="backup-btn" id="exportBtn">📥 Экспорт данных (скачать)</button>
+            <button class="backup-btn" id="importBtn">📤 Импорт данных (загрузить)</button>
+            <input type="file" id="importFile" accept=".json">
+        </div>
+    </div>
+</div>
+
+<!-- Контейнер для всплывающего окна с деталями дня -->
+<div id="dayDetailsPopup" style="display: none;"></div>
+
+<script>
+// ==================== УПРАВЛЕНИЕ ПОЛЬЗОВАТЕЛЯМИ ====================
+const UserManager = {
+    // Текущий пользователь
+    currentUser: null,
+    
+    // Ключ для хранения пользователей в localStorage
+    STORAGE_KEY: 'lifebalance_users',
+    
+    // Получить всех пользователей
+    getUsers() {
+        const users = localStorage.getItem(this.STORAGE_KEY);
+        return users ? JSON.parse(users) : {};
+    },
+    
+    // Сохранить пользователей
+    saveUsers(users) {
+        localStorage.setItem(this.STORAGE_KEY, JSON.stringify(users));
+    },
+    
+    // Зарегистрировать нового пользователя
+    register(username, password) {
+        const users = this.getUsers();
+        
+        // Проверяем, существует ли пользователь
+        if (users[username]) {
+            return { success: false, message: 'Пользователь уже существует' };
+        }
+        
+        // Сохраняем пользователя с пустыми данными дневника
+        users[username] = {
+            password: password,
+            data: {} // Здесь будут данные дневника
+        };
+        
+        this.saveUsers(users);
+        return { success: true, message: 'Регистрация успешна' };
+    },
+    
+    // Вход пользователя
+    login(username, password) {
+        const users = this.getUsers();
+        
+        if (!users[username]) {
+            return { success: false, message: 'Пользователь не найден' };
+        }
+        
+        if (users[username].password !== password) {
+            return { success: false, message: 'Неверный пароль' };
+        }
+        
+        this.currentUser = username;
+        
+        // Сохраняем текущего пользователя в sessionStorage (для перезагрузки страницы)
+        sessionStorage.setItem('currentUser', username);
+        
+        return { success: true, message: 'Вход выполнен' };
+    },
+    
+    // Выход
+    logout() {
+        this.currentUser = null;
+        sessionStorage.removeItem('currentUser');
+    },
+    
+    // Проверить, есть ли уже авторизованный пользователь
+    checkExistingSession() {
+        const savedUser = sessionStorage.getItem('currentUser');
+        if (savedUser) {
+            const users = this.getUsers();
+            if (users[savedUser]) {
+                this.currentUser = savedUser;
+                return true;
+            }
+        }
+        return false;
+    },
+    
+    // Получить данные текущего пользователя
+    getUserData() {
+        if (!this.currentUser) return null;
+        
+        const users = this.getUsers();
+        return users[this.currentUser]?.data || {};
+    },
+    
+    // Сохранить данные текущего пользователя
+    async saveUserData(data) {
+        if (!this.currentUser) return false;
+        
+        const users = this.getUsers();
+        if (!users[this.currentUser]) return false;
+        
+        users[this.currentUser].data = data;
+        this.saveUsers(users);
+        return true;
+    }
+};
+
+// ==================== РАБОТА С INDEXEDDB (теперь с привязкой к пользователю) ====================
+function getUserDBName(username) {
+    return `LifeBalanceDB_${username}`;
+}
+
+function openUserDB(username) {
+    const dbName = getUserDBName(username);
+    return new Promise((resolve, reject) => {
+        const request = indexedDB.open(dbName, 1);
+        request.onerror = () => reject(request.error);
+        request.onsuccess = () => resolve(request.result);
+        request.onupgradeneeded = (event) => {
+            const db = event.target.result;
+            if (!db.objectStoreNames.contains('days')) {
+                db.createObjectStore('days', { keyPath: 'date' });
+            }
+        };
+    });
+}
+
+async function saveDayToUserDB(username, date, categories) {
+    const db = await openUserDB(username);
+    return new Promise((resolve, reject) => {
+        const tx = db.transaction('days', 'readwrite');
+        const store = tx.objectStore('days');
+        const request = store.put({ date, categories });
+        request.onsuccess = () => resolve();
+        request.onerror = () => reject(request.error);
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => reject(tx.error);
+    });
+}
+
+async function loadAllFromUserDB(username) {
+    const db = await openUserDB(username);
+    return new Promise((resolve, reject) => {
+        const tx = db.transaction('days', 'readonly');
+        const store = tx.objectStore('days');
+        const request = store.getAll();
+        request.onsuccess = () => {
+            const all = request.result || [];
+            const history = {};
+            all.forEach(item => {
+                history[item.date] = item.categories;
+            });
+            resolve(history);
+        };
+        request.onerror = () => reject(request.error);
+    });
+}
+
+// ==================== ОСНОВНОЕ ПРИЛОЖЕНИЕ ====================
+const App = {
+    names: ["Любовь","Добро","Счастье","Здоровье","Успех"],
+    history: {},
+    viewDate: getLocalDate(),
+    chart: null,
+    mode: 7,
+    offset: 0,
+    currentDetailsDate: null,
+    currentUser: null,
+
+    async init() {
+        // Проверяем, есть ли уже авторизованный пользователь
+        if (UserManager.checkExistingSession()) {
+            this.currentUser = UserManager.currentUser;
+            await this.loadUserData();
+            this.showAppContent();
+        }
+        
+        this.setupAuthListeners();
+    },
+    
+    setupAuthListeners() {
+        // Переключение между вкладками
+        document.getElementById('loginTab').onclick = () => {
+            document.getElementById('loginTab').classList.add('active');
+            document.getElementById('registerTab').classList.remove('active');
+            document.getElementById('loginForm').classList.remove('hidden');
+            document.getElementById('registerForm').classList.add('hidden');
+        };
+        
+        document.getElementById('registerTab').onclick = () => {
+            document.getElementById('registerTab').classList.add('active');
+            document.getElementById('loginTab').classList.remove('active');
+            document.getElementById('registerForm').classList.remove('hidden');
+            document.getElementById('loginForm').classList.add('hidden');
+        };
+        
+        // Регистрация
+        document.getElementById('registerBtn').onclick = () => {
+            const username = document.getElementById('regUsername').value.trim();
+            const password = document.getElementById('regPassword').value;
+            const confirm = document.getElementById('regConfirmPassword').value;
+            const messageEl = document.getElementById('registerMessage');
+            
+            if (!username || !password) {
+                messageEl.textContent = 'Заполните все поля';
+                return;
+            }
+            
+            if (password !== confirm) {
+                messageEl.textContent = 'Пароли не совпадают';
+                return;
+            }
+            
+            const result = UserManager.register(username, password);
+            messageEl.textContent = result.message;
+            
+            if (result.success) {
+                setTimeout(() => {
+                    document.getElementById('loginTab').click();
+                    document.getElementById('loginMessage').textContent = 'Теперь вы можете войти';
+                }, 1500);
+            }
+        };
+        
+        // Вход
+        document.getElementById('loginBtn').onclick = async () => {
+            const username = document.getElementById('loginUsername').value.trim();
+            const password = document.getElementById('loginPassword').value;
+            const messageEl = document.getElementById('loginMessage');
+            
+            if (!username || !password) {
+                messageEl.textContent = 'Заполните все поля';
+                return;
+            }
+            
+            const result = UserManager.login(username, password);
+            messageEl.textContent = result.message;
+            
+            if (result.success) {
+                this.currentUser = username;
+                await this.loadUserData();
+                this.showAppContent();
+            }
+        };
+        
+        // Выход
+        document.getElementById('logoutBtn').onclick = () => {
+            UserManager.logout();
+            this.currentUser = null;
+            this.history = {};
+            this.hideAppContent();
+            
+            // Очищаем поля ввода
+            document.getElementById('loginUsername').value = '';
+            document.getElementById('loginPassword').value = '';
+            document.getElementById('regUsername').value = '';
+            document.getElementById('regPassword').value = '';
+            document.getElementById('regConfirmPassword').value = '';
+            document.getElementById('loginMessage').textContent = '';
+            document.getElementById('registerMessage').textContent = '';
+        };
+    },
+    
+    async loadUserData() {
+        // Загружаем данные из IndexedDB для текущего пользователя
+        this.history = await loadAllFromUserDB(this.currentUser);
+        
+        // Проверяем, есть ли данные в localStorage (старый формат) и переносим
+        await this.migrateFromLocalStorage();
+    },
+    
+    async migrateFromLocalStorage() {
+        const localData = localStorage.getItem('lifePro');
+        if (!localData) return;
+        
+        try {
+            const oldHistory = JSON.parse(localData);
+            
+            // Конвертируем старые строки в объекты {text, photo}
+            for (const date in oldHistory) {
+                for (const cat in oldHistory[date]) {
+                    if (oldHistory[date][cat] && Array.isArray(oldHistory[date][cat].notes)) {
+                        oldHistory[date][cat].notes = oldHistory[date][cat].notes.map(note => {
+                            if (typeof note === 'string') {
+                                return { text: note, photo: null };
+                            }
+                            return note;
+                        });
+                    }
+                }
+            }
+            
+            // Добавляем к существующей истории
+            this.history = { ...this.history, ...oldHistory };
+            
+            // Сохраняем в IndexedDB
+            for (const [date, categories] of Object.entries(oldHistory)) {
+                await saveDayToUserDB(this.currentUser, date, categories);
+            }
+            
+            localStorage.removeItem('lifePro');
+            console.log('Миграция из localStorage выполнена');
+        } catch (e) {
+            console.error('Ошибка миграции', e);
+        }
+    },
+    
+    showAppContent() {
+        // Скрываем форму авторизации, показываем инфо о пользователе и контент
+        document.getElementById('authContainer').classList.add('hidden');
+        document.getElementById('userInfo').classList.remove('hidden');
+        document.getElementById('appContent').classList.remove('hidden');
+        
+        document.getElementById('currentUser').textContent = `Пользователь: ${this.currentUser}`;
+        
+        // Инициализируем основное приложение
+        this.initApp();
+    },
+    
+    hideAppContent() {
+        document.getElementById('authContainer').classList.remove('hidden');
+        document.getElementById('userInfo').classList.add('hidden');
+        document.getElementById('appContent').classList.add('hidden');
+    },
+    
+    initApp() {
+        // Проверяем, есть ли данные за сегодня
+        if (!this.history[this.viewDate]) {
+            this.generate();
+        }
+
+        // Назначаем обработчики
+        document.getElementById("genBtn").onclick = () => this.generate();
+
+        document.querySelectorAll(".mode-btn").forEach(btn => {
+            if (btn.dataset.mode) {
+                btn.onclick = () => {
+                    document.querySelectorAll(".mode-btn").forEach(b => b.classList.remove("active"));
+                    btn.classList.add("active");
+                    this.mode = parseInt(btn.dataset.mode);
+                    this.offset = 0;
+                    this.renderChart();
+                };
+            }
+        });
+
+        document.getElementById("prev").onclick = () => {
+            this.offset += this.mode;
+            this.renderChart();
+        };
+
+        document.getElementById("next").onclick = () => {
+            this.offset -= this.mode;
+            if (this.offset < 0) this.offset = 0;
+            this.renderChart();
+        };
+
+        this.renderAll();
+    },
+
+    async generate() {
+        if (!this.history[this.viewDate]) {
+            this.history[this.viewDate] = {};
+        }
+        this.names.forEach(n => {
+            if (!this.history[this.viewDate][n]) {
+                this.history[this.viewDate][n] = { val: 50, notes: [] };
+            }
+        });
+        await this.saveCurrentDate();
+        this.renderAll();
+    },
+
+    async saveCurrentDate() {
+        await saveDayToUserDB(this.currentUser, this.viewDate, this.history[this.viewDate]);
+    },
+
+    async save() {
+        await this.saveCurrentDate();
+        this.renderAll();
+        // Если открыто окно с деталями, обновляем его
+        if (this.currentDetailsDate) {
+            this.showDayDetails(this.currentDetailsDate);
+        }
+    },
+
+    renderAll() {
+        this.renderMetrics();
+        this.renderChart();
+        this.renderAnalytics();
+        this.renderCalendar();
+    },
+
+    // ========== ФУНКЦИИ ДЛЯ ФОТО ==========
+    attachPhoto(category, index, date = null) {
+        const targetDate = date || this.viewDate;
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'image/*';
+        input.onchange = async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            if (file.size > 2 * 1024 * 1024) {
+                alert('Файл слишком большой. Максимальный размер 2 МБ.');
+                return;
+            }
+            const reader = new FileReader();
+            reader.onload = async (event) => {
+                const dataUrl = event.target.result;
+                const entry = this.history[targetDate][category];
+                if (entry && entry.notes[index]) {
+                    entry.notes[index].photo = dataUrl;
+                    await saveDayToUserDB(this.currentUser, targetDate, this.history[targetDate]);
+                    this.renderAll();
+                    if (this.currentDetailsDate) {
+                        this.showDayDetails(this.currentDetailsDate);
+                    }
+                }
+            };
+            reader.readAsDataURL(file);
+        };
+        input.click();
+    },
+
+    viewPhoto(photoData) {
+        if (!photoData) return;
+        const win = window.open();
+        win.document.write(`<img src="${photoData}" style="max-width:100%; height:auto;">`);
+    },
+
+    removePhoto(category, index, date = null) {
+        const targetDate = date || this.viewDate;
+        const entry = this.history[targetDate][category];
+        if (entry && entry.notes[index]) {
+            entry.notes[index].photo = null;
+            saveDayToUserDB(this.currentUser, targetDate, this.history[targetDate]).then(() => {
+                this.renderAll();
+                if (this.currentDetailsDate) {
+                    this.showDayDetails(this.currentDetailsDate);
+                }
+            });
+        }
+    },
+
+    handlePhotoClick(category, index, date = null) {
+        const targetDate = date || this.viewDate;
+        const entry = this.history[targetDate][category];
+        if (!entry || !entry.notes[index]) return;
+        const note = entry.notes[index];
+        if (note.photo) {
+            this.viewPhoto(note.photo);
+        } else {
+            this.attachPhoto(category, index, targetDate);
+        }
+    },
+
+    async deleteNote(category, index, date = null) {
+        const targetDate = date || this.viewDate;
+        if (!confirm('Удалить эту запись?')) return;
+        const data = this.history[targetDate];
+        if (data && data[category] && data[category].notes[index]) {
+            data[category].notes.splice(index, 1);
+            await saveDayToUserDB(this.currentUser, targetDate, this.history[targetDate]);
+            this.renderAll();
+            if (this.currentDetailsDate) {
+                this.showDayDetails(this.currentDetailsDate);
+            }
+        }
+    },
+
+    async editNote(category, index, date = null) {
+        const targetDate = date || this.viewDate;
+        const data = this.history[targetDate];
+        if (!data || !data[category] || !data[category].notes[index]) return;
+        const oldNote = data[category].notes[index];
+        const newText = prompt('Редактировать запись:', oldNote.text);
+        if (newText && newText !== oldNote.text) {
+            oldNote.text = newText;
+            await saveDayToUserDB(this.currentUser, targetDate, this.history[targetDate]);
+            this.renderAll();
+            if (this.currentDetailsDate) {
+                this.showDayDetails(this.currentDetailsDate);
+            }
+        }
+    },
+
+    async addNote(category, type, date = null) {
+        const targetDate = date || this.viewDate;
+        const prefix = type === 'plus' ? '➕ ' : '➖ ';
+        const promptText = type === 'plus' ? 'Позитивная запись:' : 'Негативная запись:';
+        const t = prompt(promptText);
+        if (!t) return;
+        
+        if (!this.history[targetDate][category]) {
+            this.history[targetDate][category] = { val: 50, notes: [] };
+        }
+        
+        this.history[targetDate][category].notes.push({ text: prefix + t, photo: null });
+        
+        if (type === 'plus') {
+            this.history[targetDate][category].val = Math.min(100, (this.history[targetDate][category].val || 50) + 10);
+        } else {
+            this.history[targetDate][category].val = Math.max(0, (this.history[targetDate][category].val || 50) - 10);
+        }
+        
+        await saveDayToUserDB(this.currentUser, targetDate, this.history[targetDate]);
+        this.renderAll();
+        if (this.currentDetailsDate) {
+            this.showDayDetails(this.currentDetailsDate);
+        }
+    },
+
+    async updateValue(category, value, date = null) {
+        const targetDate = date || this.viewDate;
+        if (!this.history[targetDate][category]) {
+            this.history[targetDate][category] = { val: 50, notes: [] };
+        }
+        this.history[targetDate][category].val = value;
+        await saveDayToUserDB(this.currentUser, targetDate, this.history[targetDate]);
+        this.renderAll();
+        if (this.currentDetailsDate) {
+            this.showDayDetails(this.currentDetailsDate);
+        }
+    },
+
+    // ========== ФУНКЦИЯ ДЛЯ ПРОСМОТРА ДЕТАЛЕЙ ДНЯ ==========
+    showDayDetails(date) {
+        this.currentDetailsDate = date;
+        const dayData = this.history[date];
+        const popup = document.getElementById('dayDetailsPopup');
+        
+        if (!dayData) {
+            popup.innerHTML = `
+                <div class="day-details-popup">
+                    <div class="day-details-content">
+                        <span class="close-details" onclick="App.closeDayDetails()">&times;</span>
+                        <h2>${date}</h2>
+                        <div class="no-data-message">Нет данных за этот день</div>
+                        <div style="display:flex; gap:10px; margin-top:20px;">
+                            <button class="backup-btn" style="flex:1;" onclick="App.generateForDate('${date}')">✨ Создать данные</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            popup.style.display = 'block';
+            return;
+        }
+
+        let categoriesHtml = '';
+        
+        this.names.forEach(category => {
+            if (!dayData[category]) {
+                dayData[category] = { val: 50, notes: [] };
+            }
+            
+            const catData = dayData[category];
+            const value = catData.val || 50;
+            const colorClass = value >= 75 ? "green" : value >= 45 ? "yellow" : "red";
+            
+            let notesHtml = '';
+            if (catData.notes && catData.notes.length > 0) {
+                notesHtml = '<ul class="category-notes-list">';
+                catData.notes.forEach((note, index) => {
+                    if (typeof note === 'string') {
+                        note = { text: note, photo: null };
+                        catData.notes[index] = note;
+                    }
+                    const hasPhoto = note.photo ? true : false;
+                    
+                    notesHtml += '<li>';
+                    notesHtml += `<span class="photo-icon ${hasPhoto ? 'has-photo' : 'no-photo'}" 
+                                  onclick="App.handlePhotoClick('${category}', ${index}, '${date}')">📷</span>`;
+                    
+                    // Добавляем корзину для удаления фото рядом с иконкой фото
+                    if (hasPhoto) {
+                        notesHtml += `<span class="photo-delete" onclick="App.removePhoto('${category}', ${index}, '${date}')" title="Удалить фото">🗑️</span>`;
+                    }
+                    
+                    if (note.photo) {
+                        notesHtml += `<img src="${note.photo}" class="photo-thumb" onclick="App.viewPhoto('${note.photo}')" title="Просмотреть фото">`;
+                    }
+                    notesHtml += `<span class="note-text" onclick="App.editNote('${category}', ${index}, '${date}')">${note.text}</span>`;
+                    notesHtml += '<div class="note-item-actions">';
+                    notesHtml += `<button onclick="App.editNote('${category}', ${index}, '${date}')">✏️</button>`;
+                    notesHtml += `<button onclick="App.deleteNote('${category}', ${index}, '${date}')">❌</button>`;
+                    notesHtml += '</div>';
+                    notesHtml += '</li>';
+                });
+                notesHtml += '</ul>';
+            } else {
+                notesHtml = '<div style="opacity:0.7; padding:10px; text-align:center;">Нет записей</div>';
+            }
+
+            categoriesHtml += `
+                <div class="category-summary">
+                    <h3>
+                        ${category}
+                        <span class="${colorClass}">${value}%</span>
+                    </h3>
+                    
+                    <div class="slider-container">
+                        <input type="range" min="0" max="100" value="${value}" 
+                               onchange="App.updateValue('${category}', this.value, '${date}')"
+                               style="width:100%;">
+                    </div>
+                    
+                    <div class="category-actions">
+                        <button class="small plus" onclick="App.addNote('${category}', 'plus', '${date}')">➕ Позитивная</button>
+                        <button class="small minus" onclick="App.addNote('${category}', 'minus', '${date}')">➖ Негативная</button>
+                    </div>
+                    
+                    ${notesHtml}
+                </div>
+            `;
+        });
+
+        popup.innerHTML = `
+            <div class="day-details-popup">
+                <div class="day-details-content">
+                    <span class="close-details" onclick="App.closeDayDetails()">&times;</span>
+                    <h2>${date}</h2>
+                    ${categoriesHtml}
+                </div>
+            </div>
+        `;
+        popup.style.display = 'block';
+    },
+
+    generateForDate(date) {
+        if (!this.history[date]) {
+            this.history[date] = {};
+        }
+        this.names.forEach(n => {
+            if (!this.history[date][n]) {
+                this.history[date][n] = { val: 50, notes: [] };
+            }
+        });
+        saveDayToUserDB(this.currentUser, date, this.history[date]).then(() => {
+            this.renderAll();
+            this.showDayDetails(date);
+        });
+    },
+
+    closeDayDetails() {
+        document.getElementById('dayDetailsPopup').style.display = 'none';
+        this.currentDetailsDate = null;
+    },
+
+    renderMetrics() {
+        const box = document.getElementById("metrics");
+        box.innerHTML = "";
+
+        if (!this.history[this.viewDate]) {
+            this.history[this.viewDate] = {};
+        }
+        const data = this.history[this.viewDate];
+
+        this.names.forEach(n => {
+            if (!data[n]) data[n] = { val: 50, notes: [] };
+
+            const val = data[n].val;
+            const color = val >= 75 ? "green" : val >= 45 ? "yellow" : "red";
+
+            const card = document.createElement("div");
+            card.className = "card";
+
+            const notesHtml = data[n].notes.map((note, index) => {
+                if (typeof note === 'string') {
+                    note = { text: note, photo: null };
+                    data[n].notes[index] = note;
+                }
+                const hasPhoto = note.photo ? true : false;
+                const photoIconClass = hasPhoto ? 'has-photo' : 'no-photo';
+                return `
+                    <div class="note-item">
+                        <div class="note-content">
+                            <span class="photo-icon ${photoIconClass}" 
+                                  title="${hasPhoto ? 'Просмотреть фото' : 'Прикрепить фото'}"
+                                  onclick="App.handlePhotoClick('${n}', ${index})">📷</span>
+                            ${hasPhoto ? `<span class="photo-delete" title="Удалить фото" onclick="App.removePhoto('${n}', ${index})">🗑️</span>` : ''}
+                            <span class="note-text" onclick="App.editNote('${n}', ${index})">${note.text}</span>
+                        </div>
+                        <div style="display:flex; align-items:center; gap:4px;">
+                            <div class="note-actions">
+                                <button class="edit-note" onclick="App.editNote('${n}', ${index})">✏️</button>
+                                <button class="delete-note" onclick="App.deleteNote('${n}', ${index})">🗑️</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('') || '<div style="opacity:0.5; text-align:center;">Нет записей</div>';
+
+            card.innerHTML = `
+                <div class="card-title">${n}</div>
+                <div class="value ${color}" id="value-${n}">${val}%</div>
+                <input type="range" min="0" max="100" value="${val}" id="slider-${n}">
+                <div style="display:flex;gap:5px;">
+                    <button class="small plus" id="plus-${n}">+ Позитивная запись</button>
+                    <button class="small minus" id="minus-${n}">− Негативная запись</button>
+                </div>
+                <div class="notes" id="notes-${n}">
+                    ${notesHtml}
+                </div>
+            `;
+
+            box.appendChild(card);
+
+            const slider = document.getElementById("slider-" + n);
+            const updateSliderBackground = (value) => {
+                slider.style.background = `linear-gradient(to right,var(--accent) ${value}%,#333 ${value}%)`;
+            };
+            updateSliderBackground(val);
+
+            slider.oninput = (e) => {
+                const v = parseInt(e.target.value);
+                data[n].val = v;
+                updateSliderBackground(v);
+                this.save();
+            };
+
+            document.getElementById("plus-" + n).onclick = async () => {
+                const t = prompt("Позитивная запись:");
+                if (!t) return;
+                data[n].notes.push({ text: "➕ " + t, photo: null });
+                data[n].val = Math.min(100, data[n].val + 10);
+                await this.save();
+            };
+
+            document.getElementById("minus-" + n).onclick = async () => {
+                const t = prompt("Негативная запись:");
+                if (!t) return;
+                data[n].notes.push({ text: "➖ " + t, photo: null });
+                data[n].val = Math.max(0, data[n].val - 10);
+                await this.save();
+            };
+        });
+    },
+
+    renderChart() {
+        const ctx = document.getElementById("chart").getContext("2d");
+        const allDates = Object.keys(this.history).sort((a, b) => new Date(a) - new Date(b));
+        const slice = allDates.slice(-this.mode - this.offset, allDates.length - this.offset);
+
+        const datasets = this.names.map((n) => ({
+            label: n,
+            data: slice.map(d => this.history[d]?.[n]?.val ?? null),
+            borderWidth: 2,
+            tension: 0.3
+        }));
+
+        if (this.chart) this.chart.destroy();
+
+        this.chart = new Chart(ctx, {
+            type: "line",
+            data: {
+                labels: slice.map(d => {
+                    const p = d.split("-");
+                    return p[2] + "." + p[1];
+                }),
+                datasets: datasets
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { labels: { color: "#fff" } } },
+                scales: {
+                    y: { min: 0, max: 100, ticks: { color: "#ccc" } },
+                    x: { ticks: { color: "#ccc" } }
+                }
+            }
+        });
+    },
+
+    renderAnalytics() {
+        const box = document.getElementById("analytics");
+        const dates = Object.keys(this.history).sort((a, b) => new Date(a) - new Date(b));
+        if (!dates.length) return;
+
+        let html = "<h3 style='margin-top:0;margin-bottom:15px;'>Аналитика</h3>";
+        html += "<div style='display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;'>";
+
+        this.names.forEach(n => {
+            const arr = dates.map(d => this.history[d]?.[n]?.val || 0);
+            const avg = arr.reduce((a, b) => a + b, 0) / arr.length;
+            const colorClass = avg >= 75 ? "green" : avg >= 45 ? "yellow" : "red";
+            html += `<div style="background:rgba(255,255,255,0.05);padding:8px;border-radius:6px;">
+                <div style="font-size:0.9em;opacity:0.8;">${n}</div>
+                <div style="font-size:1.3em;font-weight:bold;" class="${colorClass}">${avg.toFixed(1)}%</div>
+            </div>`;
+        });
+
+        html += "</div>";
+        box.innerHTML = html;
+    },
+
+    renderCalendar() {
+        const cal = document.getElementById("calendar");
+        cal.innerHTML = "";
+        const now = new Date(this.viewDate);
+        const year = now.getFullYear();
+        const month = now.getMonth();
+        const days = new Date(year, month + 1, 0).getDate();
+
+        for (let d = 1; d <= days; d++) {
+            const dateStr = formatDate(year, month, d);
+            const el = document.createElement("div");
+            
+            // Проверяем наличие записей и фото
+            let hasNotes = false;
+            let hasPhotos = false;
+            if (this.history[dateStr]) {
+                const dayData = this.history[dateStr];
+                this.names.forEach(category => {
+                    if (dayData[category] && dayData[category].notes) {
+                        dayData[category].notes.forEach(note => {
+                            if (typeof note === 'object' && note.text) hasNotes = true;
+                            if (note.photo) hasPhotos = true;
+                        });
+                    }
+                });
+            }
+            
+            el.className = "day" +
+                (this.history[dateStr] ? " has" : "") +
+                (dateStr === this.viewDate ? " active" : "") +
+                (hasNotes ? " has-notes" : "") +
+                (hasPhotos ? " has-photos" : "");
+            el.innerText = d;
+            el.onclick = () => {
+                this.viewDate = dateStr;
+                if (!this.history[this.viewDate]) {
+                    this.generate();
+                } else {
+                    this.renderAll();
+                }
+                // Показываем детали дня
+                this.showDayDetails(dateStr);
+            };
+            cal.appendChild(el);
+        }
+    }
+};
+
+function getLocalDate() {
+    const d = new Date();
+    return formatDate(d.getFullYear(), d.getMonth(), d.getDate());
+}
+
+function formatDate(y, m, d) {
+    return y + "-" + String(m + 1).padStart(2, "0") + "-" + String(d).padStart(2, "0");
+}
+
+window.App = App;
+
+document.addEventListener('DOMContentLoaded', () => {
+    App.init();
+});
+
+// ==================== ЭКСПОРТ / ИМПОРТ ====================
+document.getElementById('exportBtn')?.addEventListener('click', function() {
+    if (!App.currentUser) return;
+    
+    const dataStr = JSON.stringify(App.history, null, 2);
+    const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
+    const exportFileDefaultName = `life-balance-${App.currentUser}-${new Date().toISOString().split('T')[0]}.json`;
+    const linkElement = document.createElement('a');
+    linkElement.setAttribute('href', dataUri);
+    linkElement.setAttribute('download', exportFileDefaultName);
+    linkElement.click();
+});
+
+document.getElementById('importBtn')?.addEventListener('click', function() {
+    document.getElementById('importFile').click();
+});
+
+document.getElementById('importFile')?.addEventListener('change', async function(e) {
+    if (!App.currentUser) return;
+    
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async function(e) {
+        try {
+            const importedData = JSON.parse(e.target.result);
+            if (typeof importedData === 'object' && importedData !== null) {
+                App.history = { ...App.history, ...importedData };
+                for (const [date, categories] of Object.entries(importedData)) {
+                    await saveDayToUserDB(App.currentUser, date, categories);
+                }
+                App.renderAll();
+                alert('Данные успешно импортированы!');
+            } else {
+                alert('Ошибка: неверный формат файла');
+            }
+        } catch (err) {
+            alert('Ошибка при чтении файла: ' + err.message);
+        }
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+});
+
+// Закрытие попапа при клике вне его
+document.addEventListener('click', function(e) {
+    const popup = document.getElementById('dayDetailsPopup');
+    if (e.target.classList.contains('day-details-popup')) {
+        popup.style.display = 'none';
+        App.currentDetailsDate = null;
+    }
+});
+</script>
+</body>
+</html>
