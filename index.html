@@ -1163,8 +1163,15 @@ const App = {
         let html = "<h3 style='margin-top:0;margin-bottom:15px;'>Аналитика</h3>";
         html += "<div style='display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;'>";
         this.names.forEach(n => {
-            const arr = dates.map(d => this.history[d]?.[n]?.val || 0);
-            const avg = arr.reduce((a, b) => a + b, 0) / arr.length;
+            let sum = 0;
+            let count = 0;
+            dates.forEach(d => {
+                if (this.history[d] && this.history[d][n] && typeof this.history[d][n].val === 'number') {
+                    sum += this.history[d][n].val;
+                    count++;
+                }
+            });
+            const avg = count > 0 ? (sum / count) : 0;
             const colorClass = avg >= 75 ? "green" : avg >= 45 ? "yellow" : "red";
             html += `<div style="background:rgba(255,255,255,0.05);padding:8px;border-radius:6px;">
                 <div style="font-size:0.9em;opacity:0.8;">${n}</div>
